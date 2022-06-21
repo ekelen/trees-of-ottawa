@@ -28,17 +28,6 @@
   flex-grow: 1;
 }
 
-.title a {
-  color: #0070f3;
-  text-decoration: none;
-}
-
-.title a:hover,
-.title a:focus,
-.title a:active {
-  text-decoration: underline;
-}
-
 .title {
   margin: 0;
   line-height: 1.15;
@@ -103,10 +92,12 @@
   line-height: 1.5;
 }
 
-.logo {
+.ghlogo {
   height: 1em;
   margin-left: 0.5rem;
+  margin-right: 0.25rem;
 }
+
 
 @media (max-width: 600px) {
   .grid {
@@ -114,3 +105,4 @@
     flex-direction: column;
   }
 }
+
