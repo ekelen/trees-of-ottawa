@@ -1,7 +1,169 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import { createVerify } from "crypto";
+import type { NextPage } from "next";
+import Head from "next/head";
+import Image from "next/image";
+import { PropsWithoutRef, useCallback, useEffect, useState } from "react";
+import styles from "../styles/Home.module.css";
+
+// https://maps.ottawa.ca/arcgis/rest/services/Forestry/MapServer/0/query?where=1%3D1&outFields=*&geometry=-75.756%2C45.400%2C-75.738%2C45.405&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelContains&outSR=4326&f=json
+
+const Results = ({
+  trees,
+  envelope,
+}: {
+  trees: Array<any>;
+  envelope: { lat: [number, number]; lon: [number, number] };
+}) => {
+  const x = envelope.lon;
+  const y = envelope.lat;
+  return (
+    <div>
+      <p>{trees.length} trees found within ~250m of your address!</p>
+    </div>
+  );
+};
+
+const Addresses = (
+  props: PropsWithoutRef<{
+    results: Array<{ latitude: number; longitude: number; label: string }>;
+  }> = { results: [] }
+) => {
+  const [label, setLabel] = useState<string>("");
+  const [latlon, setLatLon] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [envelope, setEnvelope] = useState<{
+    lat: [number, number];
+    lon: [number, number];
+  } | null>(null);
+  const [query, setQuery] = useState<string>("");
+  const [trees, setTrees] = useState<any>({});
+  const createEnvelope = (latlon: {
+    latitude: number;
+    longitude: number;
+  }): { lat: [number, number]; lon: [number, number] } => {
+    const lat: [number, number] = [
+      latlon.latitude - 0.001,
+      latlon.latitude + 0.001,
+    ];
+    const lon: [number, number] = [
+      latlon.longitude - 0.001,
+      latlon.longitude + 0.001,
+    ];
+    console.log(`[=] lon:`, lon);
+    return { lat, lon };
+  };
+  const createQuery = ({
+    lat,
+    lon,
+  }: {
+    lat: [number, number];
+    lon: [number, number];
+  }) => {
+    const str: string = `${lon[0]}%2C${lat[0]}%2C${lon[1]}%2C${lat[1]}`;
+    const query: string = `https://maps.ottawa.ca/arcgis/rest/services/Forestry/MapServer/0/query?where=1%3D1&outFields=*&geometry=${str}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelContains&outSR=4326&f=json`;
+    return query;
+  };
+  useEffect(() => {
+    if (latlon) {
+      const envelope = createEnvelope(latlon);
+      const query = createQuery(envelope);
+      setEnvelope(envelope);
+      setQuery(query);
+    }
+  }, [latlon]);
+  useEffect(() => {
+    if (query) {
+      fetch(query)
+        .then((res) => res.json())
+        .then((json) => {
+          console.log(`[=] json:`, json);
+          if (json.features && json.features.length) {
+            setTrees(json.features);
+          }
+        });
+    }
+  }, [query]);
+  return (
+    <div>
+      <ul>
+        {props.results.map((res, i) => (
+          <li key={`${res.label}-${i}`} style={{ listStyle: "none" }}>
+            <button
+              onClick={() => {
+                setLabel(res.label);
+                setLatLon({ latitude: res.latitude, longitude: res.longitude });
+              }}
+            >
+              <span
+                style={{ fontWeight: res.label === label ? "bold" : undefined }}
+              >
+                {res.label}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {trees?.length && envelope && (
+        <Results trees={trees} envelope={envelope} />
+      )}
+    </div>
+  );
+};
+
+const Search = () => {
+  const [formData, setFormData] = useState({});
+  const [results, setResults] = useState<any>(null);
+  const [loading, setLoading] = useState<Boolean>(false);
+  const [formattedResults, setFormattedResults] = useState(null);
+
+  useEffect(() => {
+    if (results && results.length) {
+      const formatted = results.map((res: any) => ({
+        latitude: res.latitude,
+        longitude: res.longitude,
+        label: res.label,
+      }));
+      setFormattedResults(formatted);
+    } else {
+      setFormattedResults(null);
+    }
+  }, [results]);
+  const onSubmit = useCallback((e: any) => {
+    setResults(null);
+    const formData = new FormData(e.target);
+    const object: any = {};
+    formData.forEach(function (value, key) {
+      object[key] = value;
+    });
+    var json = JSON.stringify(object);
+    fetch("./api/get-coordinates", {
+      body: json,
+      method: "POST",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        console.log(`[=] data:`, data);
+        setFormData(data);
+        setResults(data);
+      });
+  }, []);
+  return (
+    <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit(e);
+        }}
+      >
+        <input type={"text"} name="query" />
+        <button>Submit</button>
+      </form>
+      {formattedResults && <Addresses results={formattedResults} />}
+    </>
+  );
+};
 
 const Home: NextPage = () => {
   return (
@@ -16,9 +178,9 @@ const Home: NextPage = () => {
         <h1 className={styles.title}>
           Welcome to <a href="https://nextjs.org">Next.js!</a>
         </h1>
-
+        <Search />
         <p className={styles.description}>
-          Get started by editing{' '}
+          Get started by editing{" "}
           <code className={styles.code}>pages/index.tsx</code>
         </p>
 
@@ -59,14 +221,14 @@ const Home: NextPage = () => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          Powered by{" "}
           <span className={styles.logo}>
             <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
           </span>
         </a>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
