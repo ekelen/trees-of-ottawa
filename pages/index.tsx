@@ -32,6 +32,8 @@ const Addresses = (
   }> = { results: [] }
 ) => {
   const [label, setLabel] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [latlon, setLatLon] = useState<{
     latitude: number;
     longitude: number;
@@ -77,17 +79,30 @@ const Addresses = (
   }, [latlon]);
   useEffect(() => {
     if (query) {
+      setLoading(true);
+      setTrees(null);
+      setErrorMessage("");
       fetch(query)
         .then((res) => res.json())
         .then((json) => {
-          if (json.features && json.features.length) {
+          if (json?.features?.length) {
             setTrees(json.features);
+          } else {
+            setErrorMessage(`No trees found near that location. ☹️
+            
+            Try another address closer to the city centre! (Or plant some!) 🌱`);
           }
+        })
+        .catch((error) => {
+          setErrorMessage(error.message);
+        })
+        .finally(() => {
+          setLoading(false);
         });
     }
   }, [query]);
   return (
-    <div>
+    <>
       <ul>
         {props.results.map((res, i) => (
           <li key={`${res.label}-${i}`} style={{ listStyle: "none" }}>
@@ -109,14 +124,16 @@ const Addresses = (
       {trees?.length && envelope && latlon && (
         <Results trees={trees} envelope={envelope} center={latlon} />
       )}
-    </div>
+      {loading && <p>Loading...</p>}
+      {errorMessage && <p>{errorMessage}</p>}
+    </>
   );
 };
 
 const Search = () => {
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [formattedResults, setFormattedResults] = useState(null);
+  const [formattedResults, setFormattedResults] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
@@ -159,7 +176,7 @@ const Search = () => {
       .finally(() => setLoading(false));
   }, []);
   return (
-    <div>
+    <>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -169,7 +186,7 @@ const Search = () => {
         <input
           type={"text"}
           name="query"
-          placeholder="240 McLeod St"
+          placeholder="Museum of Nature"
           required
         />
         <button>Submit</button>
@@ -177,7 +194,7 @@ const Search = () => {
       {formattedResults && <Addresses results={formattedResults} />}
       {errorMessage && <p>{errorMessage}</p>}
       {loading && <p>Loading...</p>}
-    </div>
+    </>
   );
 };
 
@@ -197,8 +214,8 @@ const Home: NextPage = () => {
 
         <p className={styles.description}>
           Enter a <strong>street address in Ottawa</strong> to see trees nearby:
-          <Search />
         </p>
+        <Search />
       </main>
 
       <footer className={styles.footer}>

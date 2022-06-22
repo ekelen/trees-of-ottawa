@@ -925,6 +925,11 @@ functions-have-names@^1.2.2:
   resolved "https://registry.npmjs.org/functions-have-names/-/functions-have-names-1.2.3.tgz"
   integrity sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==
 
+generate-colors@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/generate-colors/-/generate-colors-1.4.2.tgz#2b88ea723a48694772eba0b62a96c76424c778d7"
+  integrity sha512-qGlVeoXUzkIUYJ//to/VMxwAJv88dp6A6oem9j6W9J6tIawZMoul7niTdU1P6Yly1X1geWVmszDkHpG+ee2IYw==
+
 get-intrinsic@^1.0.2, get-intrinsic@^1.1.0, get-intrinsic@^1.1.1:
   version "1.1.2"
   resolved "https://registry.npmjs.org/get-intrinsic/-/get-intrinsic-1.1.2.tgz"
