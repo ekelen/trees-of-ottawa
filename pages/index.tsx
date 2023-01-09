@@ -42,12 +42,15 @@ const Addresses = (
     lat: [number, number];
     lon: [number, number];
   } | null>(null);
+
   const [query, setQuery] = useState<string>("");
   const [trees, setTrees] = useState<any>({});
+
   const createEnvelope = (latlon: {
     latitude: number;
     longitude: number;
   }): { lat: [number, number]; lon: [number, number] } => {
+    // 0.001 is ~110m
     const lat: [number, number] = [
       latlon.latitude - 0.001,
       latlon.latitude + 0.001,
@@ -90,7 +93,7 @@ const Addresses = (
           } else {
             setErrorMessage(`No trees found near that location. ☹️
             
-            Try another address closer to the city centre! (Or plant some!) 🌱`);
+            Try another address closer to the city centre!`);
           }
         })
         .catch((error) => {
@@ -209,13 +212,15 @@ const Home: NextPage = () => {
         <h1 className={styles.title}>
           <Image
             src="/android-chrome-512x512.png"
-            style={{ height: "2rem" }}
+            height="2rem"
+            width="2rem"
             alt="tree"
           />
           Trees of Ottawa
           <Image
             src="/android-chrome-512x512.png"
-            style={{ height: "2rem" }}
+            height="2rem"
+            width="2rem"
             alt="tree"
           />
         </h1>
