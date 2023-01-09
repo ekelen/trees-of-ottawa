@@ -207,9 +207,17 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          <img src="/android-chrome-512x512.png" style={{ height: "2rem" }} />
+          <Image
+            src="/android-chrome-512x512.png"
+            style={{ height: "2rem" }}
+            alt="tree"
+          />
           Trees of Ottawa
-          <img src="/android-chrome-512x512.png" style={{ height: "2rem" }} />
+          <Image
+            src="/android-chrome-512x512.png"
+            style={{ height: "2rem" }}
+            alt="tree"
+          />
         </h1>
 
         <p className={styles.description}>
