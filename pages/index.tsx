@@ -9,13 +9,15 @@ const LeafletComponent = dynamic(() => import("../components/Leaflet"), {
 });
 import styles from "../styles/Home.module.css";
 
+type Envelope = [[lon0: number, lat0: number], [lon1: number, lat1: number]];
+
 const Results = ({
   trees,
   envelope,
   center,
 }: {
   trees: Array<any>;
-  envelope: { lat: [number, number]; lon: [number, number] };
+  envelope: Envelope;
   center: { latitude: number; longitude: number };
 }) => {
   return (
@@ -34,58 +36,37 @@ const Addresses = (
   const [label, setLabel] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [latlon, setLatLon] = useState<{
+  const [center, setCenter] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [envelope, setEnvelope] = useState<{
-    lat: [number, number];
-    lon: [number, number];
-  } | null>(null);
+  const [envelope, setEnvelope] = useState<Envelope | null>(null);
 
-  const [query, setQuery] = useState<string>("");
-  const [trees, setTrees] = useState<any>({});
+  const [trees, setTrees] = useState<any>([]);
 
-  const createEnvelope = (latlon: {
+  const createEnvelope = (center: {
     latitude: number;
     longitude: number;
-  }): { lat: [number, number]; lon: [number, number] } => {
+  }): Envelope => {
     // 0.001 is ~110m
-    const lat: [number, number] = [
-      latlon.latitude - 0.001,
-      latlon.latitude + 0.001,
+    return [
+      [center.longitude - 0.001, center.latitude - 0.001],
+      [center.longitude + 0.001, center.latitude + 0.001],
     ];
-    const lon: [number, number] = [
-      latlon.longitude - 0.001,
-      latlon.longitude + 0.001,
-    ];
-    return { lat, lon };
   };
-  const createQuery = ({
-    lat,
-    lon,
-  }: {
-    lat: [number, number];
-    lon: [number, number];
-  }): string => {
-    const str: string = `${lon[0]}%2C${lat[0]}%2C${lon[1]}%2C${lat[1]}`;
-    const query: string = `https://maps.ottawa.ca/arcgis/rest/services/Forestry/MapServer/0/query?where=1%3D1&outFields=*&geometry=${str}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelContains&outSR=4326&f=json`;
-    return query;
-  };
+
   useEffect(() => {
-    if (latlon) {
-      const envelope = createEnvelope(latlon);
-      const query = createQuery(envelope);
+    if (center) {
+      const envelope = createEnvelope(center);
       setEnvelope(envelope);
-      setQuery(query);
     }
-  }, [latlon]);
+  }, [center]);
   useEffect(() => {
-    if (query) {
+    if (envelope) {
       setLoading(true);
       setTrees(null);
       setErrorMessage("");
-      fetch(query)
+      fetch(`./api/get-trees?envelope=${JSON.stringify(envelope)}`)
         .then((res) => res.json())
         .then((json) => {
           if (json?.features?.length) {
@@ -103,7 +84,7 @@ const Addresses = (
           setLoading(false);
         });
     }
-  }, [query]);
+  }, [envelope]);
   return (
     <>
       <ul>
@@ -112,7 +93,7 @@ const Addresses = (
             <button
               onClick={() => {
                 setLabel(res.label);
-                setLatLon({ latitude: res.latitude, longitude: res.longitude });
+                setCenter({ latitude: res.latitude, longitude: res.longitude });
               }}
             >
               <span
@@ -124,11 +105,13 @@ const Addresses = (
           </li>
         ))}
       </ul>
-      {trees?.length && envelope && latlon && (
-        <Results trees={trees} envelope={envelope} center={latlon} />
-      )}
-      {loading && <p>Loading...</p>}
-      {errorMessage && <p>{errorMessage}</p>}
+      {trees?.length && envelope && center ? (
+        <Results trees={trees} envelope={envelope} center={center} />
+      ) : loading ? (
+        <p>Loading...</p>
+      ) : errorMessage ? (
+        <p>{errorMessage}</p>
+      ) : null}
     </>
   );
 };
@@ -164,9 +147,9 @@ const Search = () => {
     formData.forEach(function (value, key) {
       object[key] = value;
     });
-    var json = JSON.stringify(object);
+    const body = JSON.stringify(object);
     fetch("./api/get-coordinates", {
-      body: json,
+      body,
       method: "POST",
     })
       .then((r) => r.json())
@@ -194,9 +177,13 @@ const Search = () => {
         />
         <button>Submit</button>
       </form>
-      {formattedResults && <Addresses results={formattedResults} />}
-      {errorMessage && <p>{errorMessage}</p>}
-      {loading && <p>Loading...</p>}
+      {formattedResults ? (
+        <Addresses results={formattedResults} />
+      ) : errorMessage ? (
+        <p>{errorMessage}</p>
+      ) : loading ? (
+        <p>Loading...</p>
+      ) : null}
     </>
   );
 };
@@ -232,13 +219,12 @@ const Home: NextPage = () => {
       </main>
 
       <footer className={styles.footer}>
-        {/* Cafe washroom code 0421 is now committed */}
         <a
           href="https://github.com/ekelen/trees-of-ottawa"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Built by{" "}
+          by{" "}
           <span className={styles.ghlogo}>
             <Image src="/github.svg" alt="GitHub Logo" width={16} height={16} />
           </span>{" "}

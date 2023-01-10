@@ -15,8 +15,8 @@ const Bounds = ({ bounds }) => {
 export default function LeafletComponent({ center, envelope, trees = [] }) {
   const [treesWithColor, setTreesWithColor] = useState([]);
   const boundsOption = [
-    [envelope.lat[0], envelope.lon[0]],
-    [envelope.lat[1], envelope.lon[1]],
+    [envelope[0][1], envelope[0][0]],
+    [envelope[1][1], envelope[1][0]],
   ];
 
   useEffect(() => {
